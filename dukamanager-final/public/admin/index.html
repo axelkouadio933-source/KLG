@@ -1,0 +1,956 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>DukaManager — Tableau de bord Admin</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600&family=Sora:wght@600;700&display=swap" rel="stylesheet"/>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --g:#1D9E75;--g2:#0F6E56;--gn:#0A1A10;--gn2:#112B1C;
+  --am:#EF9F27;--am2:#FEF3E2;--re:#E24B4A;--re2:#FEF0F0;
+  --bl:#3B82F6;--bl2:#EFF6FF;--pu:#7C3AED;--pu2:#EDE9FE;
+  --tx:#111827;--tx2:#6B7280;--tx3:#9CA3AF;
+  --bg:#F9FAFB;--bg2:#FFFFFF;--bg3:#F3F4F6;
+  --bd:#E5E7EB;--bd2:#D1D5DB;
+  --r:8px;--rl:12px;--rx:18px;
+  --f:'DM Sans',sans-serif;--ft:'Sora',sans-serif;
+  --sh:0 1px 3px rgba(0,0,0,.06),0 4px 12px rgba(0,0,0,.06);
+}
+body{font-family:var(--f);color:var(--tx);background:var(--bg);min-height:100vh}
+
+/* LOGIN */
+#login-screen{position:fixed;inset:0;background:var(--gn);display:flex;align-items:center;justify-content:center;padding:20px;z-index:999}
+#login-screen.hide{display:none}
+.login-card{background:var(--bg2);border-radius:var(--rx);padding:40px 36px;width:100%;max-width:380px;box-shadow:0 24px 64px rgba(0,0,0,.4)}
+.login-mark{width:52px;height:52px;background:var(--g);border-radius:14px;display:flex;align-items:center;justify-content:center;font-family:var(--ft);font-size:24px;font-weight:700;color:#fff;margin-bottom:20px}
+.login-title{font-family:var(--ft);font-size:22px;font-weight:700;margin-bottom:4px}
+.login-sub{font-size:13px;color:var(--tx2);margin-bottom:28px}
+.login-err{background:var(--re2);color:var(--re);padding:10px 13px;border-radius:var(--rl);font-size:13px;margin-bottom:14px;display:none}
+
+/* APP */
+#app{display:none}
+#app.vis{display:flex;min-height:100vh}
+
+/* SIDEBAR */
+.sb{width:230px;min-width:230px;background:var(--gn);display:flex;flex-direction:column;position:fixed;top:0;left:0;bottom:0;z-index:100}
+.sb-logo{padding:22px 18px 18px;border-bottom:1px solid rgba(255,255,255,.07)}
+.sb-mark{width:36px;height:36px;background:var(--g);border-radius:10px;display:flex;align-items:center;justify-content:center;font-family:var(--ft);font-size:16px;font-weight:700;color:#fff;margin-bottom:10px}
+.sb-name{font-family:var(--ft);font-size:15px;font-weight:600;color:#fff}
+.sb-badge{display:inline-flex;align-items:center;gap:5px;background:rgba(29,158,117,.25);color:#9FE1CB;font-size:10px;font-weight:600;padding:3px 9px;border-radius:20px;margin-top:5px}
+.nav-sec{font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.12em;color:rgba(255,255,255,.2);padding:14px 18px 5px}
+.ni{display:flex;align-items:center;gap:10px;padding:10px 18px;font-size:13px;color:rgba(255,255,255,.5);cursor:pointer;transition:all .15s;border-left:3px solid transparent;user-select:none}
+.ni:hover{color:rgba(255,255,255,.85);background:rgba(255,255,255,.06)}
+.ni.active{color:#fff;background:rgba(29,158,117,.2);border-left-color:var(--g);font-weight:500}
+.ni-ico{font-size:15px;width:18px;text-align:center;flex-shrink:0}
+.sb-foot{margin-top:auto;padding:14px;border-top:1px solid rgba(255,255,255,.07)}
+.admin-card{background:rgba(255,255,255,.07);border-radius:var(--rl);padding:10px 12px;display:flex;align-items:center;gap:9px;cursor:pointer}
+.admin-av{width:30px;height:30px;border-radius:50%;background:var(--g);display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;color:#fff;flex-shrink:0}
+.admin-nm{font-size:12px;font-weight:500;color:#fff}
+.admin-role{font-size:10px;color:rgba(255,255,255,.4)}
+.logout-btn{margin-left:auto;font-size:15px;color:rgba(255,255,255,.3);cursor:pointer;padding:4px;border:none;background:none;transition:color .15s}
+.logout-btn:hover{color:rgba(255,255,255,.7)}
+
+/* MAIN */
+.main{margin-left:230px;flex:1;display:flex;flex-direction:column;min-height:100vh}
+.topbar{background:var(--bg2);border-bottom:1px solid var(--bd);padding:14px 28px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:50}
+.topbar-title{font-family:var(--ft);font-size:18px;font-weight:600}
+.topbar-r{display:flex;align-items:center;gap:10px}
+.live-dot{width:8px;height:8px;border-radius:50%;background:var(--g);animation:pulse 2s ease-in-out infinite}
+@keyframes pulse{0%,100%{opacity:.6;transform:scale(1)}50%{opacity:1;transform:scale(1.3)}}
+.live-label{font-size:12px;color:var(--tx2);display:flex;align-items:center;gap:6px}
+
+.content{padding:24px 28px;flex:1}
+.page{display:none;animation:fi .2s ease}
+.page.active{display:block}
+@keyframes fi{from{opacity:0;transform:translateY(5px)}to{opacity:1;transform:translateY(0)}}
+
+/* BUTTONS */
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;padding:8px 16px;border-radius:var(--rl);border:1px solid var(--bd);background:var(--bg2);font-size:13px;font-weight:500;cursor:pointer;color:var(--tx);font-family:var(--f);transition:all .15s;white-space:nowrap}
+.btn:hover{background:var(--bg3)}.btn:active{transform:scale(.98)}
+.btn:disabled{opacity:.5;cursor:not-allowed;transform:none}
+.btn-p{background:var(--g);color:#fff;border-color:var(--g)}.btn-p:hover{background:var(--g2)}
+.btn-sm{padding:5px 11px;font-size:12px;border-radius:var(--r)}
+.btn-danger{background:var(--re);color:#fff;border-color:var(--re)}
+.btn-wa{background:#25D366;color:#fff;border-color:#25D366}
+.btn-ai{background:linear-gradient(135deg,var(--g),#0ea5e9);color:#fff;border:none}
+.spin{width:16px;height:16px;border:2px solid rgba(255,255,255,.3);border-top-color:#fff;border-radius:50%;animation:rot .6s linear infinite}
+@keyframes rot{to{transform:rotate(360deg)}}
+
+/* CARDS */
+.card{background:var(--bg2);border:1px solid var(--bd);border-radius:var(--rx);padding:20px;box-shadow:var(--sh)}
+.card-title{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.09em;color:var(--tx2);margin-bottom:14px}
+.card-hdr{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px}
+
+/* KPIs */
+.kpi-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:14px;margin-bottom:22px}
+.kpi{background:var(--bg2);border:1px solid var(--bd);border-radius:var(--rx);padding:16px 18px;box-shadow:var(--sh);position:relative;overflow:hidden}
+.kpi::before{content:'';position:absolute;top:0;left:0;right:0;height:3px;background:var(--kpi-color,var(--g));border-radius:3px 3px 0 0}
+.kpi-ico{position:absolute;right:14px;top:14px;font-size:22px;opacity:.12}
+.kpi-lbl{font-size:12px;color:var(--tx2);margin-bottom:7px;font-weight:500}
+.kpi-val{font-size:26px;font-weight:700;font-family:var(--ft);line-height:1}
+.kpi-sub{font-size:12px;color:var(--tx2);margin-top:5px}
+.kpi-up{color:#16a34a}.kpi-dn{color:var(--re)}
+.g2{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:18px}
+.g3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px;margin-bottom:18px}
+
+/* TABLE */
+.tw{overflow-x:auto}
+table.dt{width:100%;border-collapse:collapse;font-size:13px}
+table.dt th{text-align:left;padding:9px 12px;border-bottom:1px solid var(--bd);font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.07em;color:var(--tx2);background:var(--bg3);white-space:nowrap}
+table.dt td{padding:10px 12px;border-bottom:1px solid var(--bd);vertical-align:middle}
+table.dt tr:last-child td{border-bottom:none}
+table.dt tbody tr:hover td{background:#FAFAFA}
+.dt-act{display:flex;gap:5px;opacity:0;transition:opacity .15s}
+tr:hover .dt-act{opacity:1}
+
+/* BADGES */
+.ba{display:inline-flex;align-items:center;gap:3px;padding:3px 9px;border-radius:20px;font-size:11px;font-weight:600;white-space:nowrap}
+.ba-g{background:#DCFCE7;color:#166534}.ba-a{background:#FEF9C3;color:#854D0E}
+.ba-r{background:#FEE2E2;color:#991B1B}.ba-b{background:#DBEAFE;color:#1E40AF}
+.ba-p{background:#EDE9FE;color:#5B21B6}.ba-gr{background:var(--bg3);color:var(--tx2)}
+
+/* BAR CHART */
+.bar-wrap2{display:flex;align-items:flex-end;gap:6px;height:80px;padding-bottom:2px}
+.bar2{display:flex;flex-direction:column;align-items:center;flex:1;height:100%;justify-content:flex-end}
+.bar2-fill{width:100%;border-radius:4px 4px 0 0;transition:height .4s cubic-bezier(.4,0,.2,1);min-height:3px}
+.bar2-lbl{font-size:9px;color:var(--tx2);margin-top:4px;text-align:center}
+.bar2-val{font-size:9px;font-weight:600;color:var(--tx2);margin-bottom:2px}
+
+/* FORMS */
+.fg{display:flex;flex-direction:column;gap:5px;margin-bottom:14px}
+.fl{font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.07em;color:var(--tx2)}
+.fi,.fs{padding:9px 12px;border:1.5px solid var(--bd);border-radius:var(--rl);font-size:14px;background:var(--bg2);color:var(--tx);font-family:var(--f);width:100%;transition:all .15s}
+.fi:focus,.fs:focus{outline:none;border-color:var(--g);box-shadow:0 0 0 3px rgba(29,158,117,.1)}
+.fg2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+
+/* MODAL */
+.mo{position:fixed;inset:0;background:rgba(0,0,0,.55);display:flex;align-items:center;justify-content:center;z-index:500;padding:20px;opacity:0;pointer-events:none;transition:opacity .2s;backdrop-filter:blur(3px)}
+.mo.open{opacity:1;pointer-events:all}
+.mo-box{background:var(--bg2);border-radius:var(--rx);padding:26px;width:100%;max-width:500px;max-height:90vh;overflow-y:auto;box-shadow:0 24px 64px rgba(0,0,0,.25);transform:scale(.95);transition:all .2s}
+.mo.open .mo-box{transform:scale(1)}
+.mo-title{font-family:var(--ft);font-size:18px;font-weight:700;margin-bottom:4px}
+.mo-sub{font-size:13px;color:var(--tx2);margin-bottom:20px}
+.mo-footer{display:flex;gap:10px;justify-content:flex-end;margin-top:20px;padding-top:16px;border-top:1px solid var(--bd)}
+
+/* TOAST */
+.toast{position:fixed;bottom:22px;right:22px;background:var(--gn);color:#fff;padding:12px 18px;border-radius:var(--rx);font-size:13px;font-weight:500;box-shadow:0 10px 30px rgba(0,0,0,.3);z-index:2000;transform:translateY(70px);opacity:0;transition:all .3s cubic-bezier(.34,1.2,.64,1);display:flex;align-items:center;gap:9px;max-width:320px}
+.toast.show{transform:translateY(0);opacity:1}
+.toast.ok{border-left:3px solid var(--g)}.toast.err{border-left:3px solid var(--re)}.toast.info{border-left:3px solid var(--bl)}
+
+/* PROGRESS */
+.pw{height:6px;border-radius:3px;background:var(--bd);overflow:hidden}
+.pf{height:100%;border-radius:3px;transition:width .4s}
+
+/* USER ACTIVITY */
+.activity-item{display:flex;align-items:center;gap:12px;padding:9px 0;border-bottom:1px solid var(--bd)}
+.activity-av{width:32px;height:32px;border-radius:50%;background:rgba(29,158,117,.12);display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;color:var(--g);flex-shrink:0}
+.activity-info{flex:1;min-width:0}
+.activity-name{font-size:13px;font-weight:500}
+.activity-detail{font-size:11px;color:var(--tx2);margin-top:2px}
+
+/* PLAN SWITCHER */
+.plan-sel{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px}
+.plan-opt{padding:6px 14px;border:2px solid var(--bd);border-radius:20px;font-size:12px;font-weight:600;cursor:pointer;transition:all .15s;color:var(--tx2)}
+.plan-opt:hover{border-color:var(--g);color:var(--g)}
+.plan-opt.sel{border-color:var(--g);background:rgba(29,158,117,.06);color:var(--g)}
+
+/* STATS MINI */
+.stat-row{display:flex;justify-content:space-between;align-items:center;padding:9px 0;border-bottom:1px solid var(--bd);font-size:13px}
+.stat-row:last-child{border-bottom:none}
+
+/* SEARCH */
+.search-bar{display:flex;gap:10px;margin-bottom:16px;flex-wrap:wrap;align-items:center}
+.search-input{flex:1;min-width:200px;padding:9px 12px 9px 36px;border:1.5px solid var(--bd);border-radius:var(--rl);font-size:13px;background:var(--bg2);color:var(--tx);font-family:var(--f);position:relative}
+.search-input:focus{outline:none;border-color:var(--g)}
+.search-wrap{position:relative;flex:1;min-width:200px}
+.search-ico{position:absolute;left:11px;top:50%;transform:translateY(-50%);color:var(--tx2);font-size:14px;pointer-events:none}
+
+/* DIVIDER */
+.divider{height:1px;background:var(--bd);margin:18px 0}
+
+/* EMPTY */
+.empty{text-align:center;padding:40px 20px;color:var(--tx2);font-size:13px}
+.empty-ico{font-size:36px;margin-bottom:10px;opacity:.5}
+
+/* TOGGLE */
+.toggle{position:relative;width:40px;height:22px;flex-shrink:0}
+.toggle input{opacity:0;width:0;height:0}
+.toggle-sl{position:absolute;inset:0;background:var(--bd2);border-radius:11px;cursor:pointer;transition:background .2s}
+.toggle-sl::before{content:'';position:absolute;width:16px;height:16px;left:3px;bottom:3px;background:#fff;border-radius:50%;transition:transform .2s;box-shadow:0 1px 3px rgba(0,0,0,.2)}
+.toggle input:checked+.toggle-sl{background:var(--g)}
+.toggle input:checked+.toggle-sl::before{transform:translateX(18px)}
+
+/* NOTIFICATION BROADCAST */
+.notif-type-sel{display:flex;gap:7px;margin-bottom:12px}
+.ntbtn{padding:6px 14px;border:1.5px solid var(--bd);border-radius:20px;font-size:12px;font-weight:600;cursor:pointer;transition:all .15s;background:none;font-family:var(--f);color:var(--tx2)}
+.ntbtn.sel{border-color:var(--g);background:rgba(29,158,117,.06);color:var(--g)}
+
+/* RESPONSIVE */
+@media(max-width:900px){
+  .sb{transform:translateX(-100%)}.sb.open{transform:translateX(0)}
+  .main{margin-left:0}
+  .kpi-grid{grid-template-columns:repeat(2,1fr)}
+  .g2,.g3{grid-template-columns:1fr}
+  .content{padding:16px}
+}
+@media(max-width:540px){.kpi-grid{grid-template-columns:repeat(2,1fr)}}
+</style>
+</head>
+<body>
+
+<!-- LOGIN -->
+<div id="login-screen">
+  <div class="login-card">
+    <div class="login-mark">D</div>
+    <div class="login-title">Espace Administrateur</div>
+    <div class="login-sub">Accès réservé au créateur de DukaManager</div>
+    <div class="login-err" id="login-err"></div>
+    <div class="fg"><label class="fl">Email admin</label><input class="fi" type="email" id="l-email" placeholder="admin@dukamanager.com" onkeydown="if(event.key==='Enter')doLogin()"/></div>
+    <div class="fg"><label class="fl">Mot de passe</label><input class="fi" type="password" id="l-pass" placeholder="••••••••" onkeydown="if(event.key==='Enter')doLogin()"/></div>
+    <button class="btn btn-p" style="width:100%;padding:12px;font-size:15px;margin-top:4px" id="btn-login" onclick="doLogin()">Accéder au tableau de bord</button>
+  </div>
+</div>
+
+<!-- APP -->
+<div id="app">
+  <aside class="sb" id="sb">
+    <div class="sb-logo">
+      <div class="sb-mark">D</div>
+      <div class="sb-name">DukaManager</div>
+      <div class="sb-badge">🛡 Administrateur</div>
+    </div>
+    <div style="padding:10px 0;flex:1;overflow-y:auto">
+      <div class="nav-sec">Tableau de bord</div>
+      <div class="ni active" data-p="overview" onclick="nav('overview')"><span class="ni-ico">◈</span> Vue d'ensemble</div>
+      <div class="ni" data-p="analytics" onclick="nav('analytics')"><span class="ni-ico">◱</span> Analytiques</div>
+      <div class="nav-sec">Gestion</div>
+      <div class="ni" data-p="users" onclick="nav('users')"><span class="ni-ico">◑</span> Utilisateurs</div>
+      <div class="ni" data-p="ai-logs" onclick="nav('ai-logs')"><span class="ni-ico">✦</span> Logs IA</div>
+      <div class="nav-sec">Communication</div>
+      <div class="ni" data-p="broadcast" onclick="nav('broadcast')"><span class="ni-ico">◷</span> Notifications</div>
+      <div class="nav-sec">Système</div>
+      <div class="ni" data-p="config" onclick="nav('config')"><span class="ni-ico">⚙</span> Configuration</div>
+    </div>
+    <div class="sb-foot">
+      <div class="admin-card">
+        <div class="admin-av">AD</div>
+        <div style="flex:1"><div class="admin-nm" id="sb-admin-nm">Administrateur</div><div class="admin-role">Créateur · Accès total</div></div>
+        <button class="logout-btn" onclick="doLogout()" title="Déconnexion">⏻</button>
+      </div>
+    </div>
+  </aside>
+
+  <main class="main">
+    <div class="topbar">
+      <div style="display:flex;align-items:center;gap:12px">
+        <button style="display:none;background:none;border:none;cursor:pointer;font-size:19px;padding:6px;border-radius:var(--r)" id="menu-btn" onclick="document.getElementById('sb').classList.toggle('open')">☰</button>
+        <span class="topbar-title" id="pg-title">Vue d'ensemble</span>
+      </div>
+      <div class="topbar-r">
+        <div class="live-label"><span class="live-dot"></span> Temps réel</div>
+        <button class="btn btn-sm" onclick="rafraichir()">↻ Actualiser</button>
+      </div>
+    </div>
+    <div class="content">
+      <div class="page active" id="pg-overview"></div>
+      <div class="page" id="pg-analytics"></div>
+      <div class="page" id="pg-users"></div>
+      <div class="page" id="pg-ai-logs"></div>
+      <div class="page" id="pg-broadcast"></div>
+      <div class="page" id="pg-config"></div>
+    </div>
+  </main>
+</div>
+
+<div id="mroot"></div>
+<div class="toast" id="tst"></div>
+
+<script>
+// =============================================
+//  DukaManager — Admin Dashboard
+// =============================================
+
+// Config API — même domaine ou localhost en dev
+const API = window.location.origin;
+// const API = 'http://localhost:3000'; // Pour dev local
+
+let TOKEN = sessionStorage.getItem('admin_token') || '';
+let ADMIN_USER = null;
+let STATS = {};
+let USERS = [];
+let AI_LOGS = [];
+let selectedNotifType = 'info';
+
+// ---- INIT ----
+window.addEventListener('DOMContentLoaded', () => {
+  if (TOKEN) checkAdmin();
+});
+
+async function checkAdmin() {
+  try {
+    const me = await api('/api/auth/me');
+    if (me.error || me.email !== getAdminEmail()) {
+      showLogin();
+      return;
+    }
+    ADMIN_USER = me;
+    document.getElementById('sb-admin-nm').textContent = me.nom;
+    showApp();
+    await chargerStats();
+    nav('overview');
+    setInterval(async () => {
+      await chargerStats();
+      const p = document.querySelector('.page.active');
+      if (p?.id === 'pg-overview') renderOverview();
+      if (p?.id === 'pg-analytics') renderAnalytics();
+    }, 30000);
+  } catch {
+    showLogin();
+  }
+}
+
+function getAdminEmail() {
+  // Récupéré depuis le serveur au login
+  return ADMIN_USER?.email || sessionStorage.getItem('admin_email') || '';
+}
+
+function showLogin() {
+  document.getElementById('login-screen').classList.remove('hide');
+  document.getElementById('app').classList.remove('vis');
+}
+function showApp() {
+  document.getElementById('login-screen').classList.add('hide');
+  document.getElementById('app').classList.add('vis');
+}
+
+async function doLogin() {
+  const email = document.getElementById('l-email').value.trim();
+  const pass  = document.getElementById('l-pass').value;
+  const err   = document.getElementById('login-err');
+  const btn   = document.getElementById('btn-login');
+  err.style.display = 'none';
+  if (!email || !pass) { err.textContent = 'Email et mot de passe requis'; err.style.display = 'block'; return; }
+  btn.innerHTML = '<div class="spin"></div> Connexion...'; btn.disabled = true;
+  try {
+    const data = await api('/api/auth/login', 'POST', { email, password: pass });
+    if (data.error) { err.textContent = data.error; err.style.display = 'block'; return; }
+    // Vérifier si c'est l'admin
+    const health = await api('/api/health');
+    TOKEN = data.token;
+    sessionStorage.setItem('admin_token', TOKEN);
+    sessionStorage.setItem('admin_email', email);
+    ADMIN_USER = data.user;
+    document.getElementById('sb-admin-nm').textContent = data.user.nom;
+    showApp();
+    await chargerStats();
+    nav('overview');
+  } catch (e) {
+    err.textContent = 'Impossible de se connecter au serveur. Vérifiez que le backend est démarré.';
+    err.style.display = 'block';
+  } finally {
+    btn.innerHTML = 'Accéder au tableau de bord'; btn.disabled = false;
+  }
+}
+
+function doLogout() {
+  TOKEN = ''; sessionStorage.removeItem('admin_token');
+  showLogin();
+}
+
+// ---- API ----
+async function api(path, method = 'GET', body = null) {
+  const opts = { method, headers: { 'Content-Type': 'application/json' } };
+  if (TOKEN) opts.headers['Authorization'] = 'Bearer ' + TOKEN;
+  if (body)  opts.body = JSON.stringify(body);
+  const r = await fetch(API + path, opts);
+  if (r.status === 401) { doLogout(); return { error: 'Session expirée' }; }
+  return r.json();
+}
+
+async function chargerStats() {
+  try {
+    STATS = await api('/api/admin/stats');
+  } catch { console.error('Stats error'); }
+}
+
+// ---- NAVIGATION ----
+function nav(p) {
+  document.querySelectorAll('.page').forEach(x => x.classList.remove('active'));
+  document.querySelectorAll('.ni').forEach(x => x.classList.remove('active'));
+  document.getElementById('pg-' + p)?.classList.add('active');
+  document.querySelector(`[data-p="${p}"]`)?.classList.add('active');
+  const T = { overview:'Vue d\'ensemble', analytics:'Analytiques', users:'Utilisateurs',
+    'ai-logs':'Logs IA', broadcast:'Notifications', config:'Configuration' };
+  document.getElementById('pg-title').textContent = T[p] || p;
+  document.getElementById('sb').classList.remove('open');
+  const fns = { overview:renderOverview, analytics:renderAnalytics, users:renderUsers,
+    'ai-logs':renderAILogs, broadcast:renderBroadcast, config:renderConfig };
+  fns[p]?.();
+}
+
+function rafraichir() { chargerStats().then(() => { const p = document.querySelector('.page.active'); const id = p?.id?.replace('pg-',''); if(id){ const fns={overview:renderOverview,analytics:renderAnalytics,users:renderUsers,'ai-logs':renderAILogs}; fns[id]?.(); } toast('Actualisé','ok'); }); }
+
+const fmt  = n => Math.round(n||0).toLocaleString('fr-FR');
+const esc  = s => (s||'').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+const inits = n => (n||'?').split(' ').map(w=>w[0]).join('').slice(0,2).toUpperCase();
+const planColor = { free:'ba-gr', basic:'ba-b', pro:'ba-p', illimite:'ba-g' };
+const planBg = { free:'#F3F4F6', basic:'#DBEAFE', pro:'#EDE9FE', illimite:'#DCFCE7' };
+
+// =============================================
+//  PAGE: VUE D'ENSEMBLE
+// =============================================
+function renderOverview() {
+  const s = STATS;
+  if (!s.total_users && s.total_users !== 0) {
+    document.getElementById('pg-overview').innerHTML = `<div class="empty"><div class="empty-ico">⏳</div><div>Chargement des données...</div></div>`;
+    return;
+  }
+
+  // Mini graphique inscriptions (7 jours)
+  const inscrG = (s.inscriptions_graph || []).slice(-7);
+  const maxI = Math.max(...inscrG.map(d=>d.n), 1);
+  const barsI = inscrG.map(d => `
+    <div class="bar2">
+      <div class="bar2-val">${d.n > 0 ? d.n : ''}</div>
+      <div class="bar2-fill" style="height:${Math.round(d.n/maxI*60)}px;background:var(--g);opacity:.8"></div>
+      <div class="bar2-lbl">${d.jour?.slice(5)||''}</div>
+    </div>`).join('');
+
+  // Mini graphique IA (7 jours)
+  const aiG = (s.ai_msgs_graph || []).slice(-7);
+  const maxA = Math.max(...aiG.map(d=>d.n), 1);
+  const barsA = aiG.map(d => `
+    <div class="bar2">
+      <div class="bar2-val">${d.n > 0 ? d.n : ''}</div>
+      <div class="bar2-fill" style="height:${Math.round(d.n/maxA*60)}px;background:#0ea5e9;opacity:.8"></div>
+      <div class="bar2-lbl">${d.jour?.slice(5)||''}</div>
+    </div>`).join('');
+
+  document.getElementById('pg-overview').innerHTML = `
+    <div class="kpi-grid">
+      <div class="kpi" style="--kpi-color:var(--g)">
+        <div class="kpi-ico">👥</div>
+        <div class="kpi-lbl">Utilisateurs total</div>
+        <div class="kpi-val kpi-up">${fmt(s.total_users)}</div>
+        <div class="kpi-sub">+${s.inscrits_auj||0} aujourd'hui</div>
+      </div>
+      <div class="kpi" style="--kpi-color:var(--bl)">
+        <div class="kpi-ico">🔥</div>
+        <div class="kpi-lbl">Actifs 7 jours</div>
+        <div class="kpi-val">${fmt(s.actifs_7j)}</div>
+        <div class="kpi-sub">${fmt(s.actifs_30j)} sur 30 jours</div>
+      </div>
+      <div class="kpi" style="--kpi-color:#0ea5e9">
+        <div class="kpi-ico">✦</div>
+        <div class="kpi-lbl">Messages IA total</div>
+        <div class="kpi-val">${fmt(s.total_ai_msgs)}</div>
+        <div class="kpi-sub">+${s.ai_msgs_auj||0} aujourd'hui</div>
+      </div>
+      <div class="kpi" style="--kpi-color:var(--am)">
+        <div class="kpi-ico">🏪</div>
+        <div class="kpi-lbl">Boutiques créées</div>
+        <div class="kpi-val">${fmt(s.total_boutiques)}</div>
+        <div class="kpi-sub">${fmt(s.inscrits_7j)} inscrits / 7j</div>
+      </div>
+    </div>
+
+    <div class="g2">
+      <div class="card">
+        <div class="card-title">Inscriptions — 7 derniers jours</div>
+        <div class="bar-wrap2">${barsI || '<div style="color:var(--tx2);font-size:13px">Aucune donnée</div>'}</div>
+      </div>
+      <div class="card">
+        <div class="card-title">Messages IA — 7 derniers jours</div>
+        <div class="bar-wrap2">${barsA || '<div style="color:var(--tx2);font-size:13px">Aucune donnée</div>'}</div>
+      </div>
+    </div>
+
+    <div class="g2">
+      <div class="card">
+        <div class="card-title">Répartition par plan</div>
+        ${Object.entries(s.plans||{}).map(([plan, n]) => `
+          <div style="margin-bottom:12px">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:5px">
+              <div style="display:flex;align-items:center;gap:8px">
+                <span class="ba ${planColor[plan]||'ba-gr'}">${plan}</span>
+                <span style="font-size:13px;font-weight:600">${n} utilisateur${n>1?'s':''}</span>
+              </div>
+              <span style="font-size:12px;color:var(--tx2)">${s.total_users>0?Math.round(n/s.total_users*100):0}%</span>
+            </div>
+            <div class="pw"><div class="pf" style="width:${s.total_users>0?Math.round(n/s.total_users*100):0}%;background:${planBg[plan]||'var(--bg3)'}"></div></div>
+          </div>`).join('')}
+      </div>
+      <div class="card">
+        <div class="card-title">Actions rapides</div>
+        <div style="display:flex;flex-direction:column;gap:10px">
+          <button class="btn btn-p" onclick="nav('users')">👥 Gérer les utilisateurs</button>
+          <button class="btn" onclick="nav('ai-logs')">✦ Voir les logs IA</button>
+          <button class="btn" onclick="nav('broadcast')">📢 Envoyer une notification</button>
+          <div class="divider"></div>
+          <button class="btn" onclick="resetCredits()">🔄 Réinitialiser crédits IA mensuels</button>
+          <button class="btn" onclick="nav('config')">⚙ Configuration serveur</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">Statistiques globales</div>
+      <div class="g3" style="margin-bottom:0">
+        <div class="stat-row" style="padding:12px 0">
+          <span style="color:var(--tx2)">Tokens IA consommés</span>
+          <strong>${fmt(s.tokens_total||0)}</strong>
+        </div>
+        <div class="stat-row" style="padding:12px 0">
+          <span style="color:var(--tx2)">Taux d'engagement 30j</span>
+          <strong>${s.total_users>0?Math.round((s.actifs_30j||0)/s.total_users*100):0}%</strong>
+        </div>
+        <div class="stat-row" style="padding:12px 0">
+          <span style="color:var(--tx2)">Moy. IA / utilisateur</span>
+          <strong>${s.total_users>0?Math.round((s.total_ai_msgs||0)/s.total_users):0} msg</strong>
+        </div>
+      </div>
+    </div>`;
+}
+
+// =============================================
+//  PAGE: ANALYTIQUES
+// =============================================
+function renderAnalytics() {
+  const s = STATS;
+  const inscrG = s.inscriptions_graph || [];
+  const aiG    = s.ai_msgs_graph || [];
+
+  const maxI = Math.max(...inscrG.map(d=>d.n), 1);
+  const maxA = Math.max(...aiG.map(d=>d.n), 1);
+
+  const barsI30 = inscrG.map(d => `
+    <div class="bar2">
+      <div class="bar2-val">${d.n > 0 ? d.n : ''}</div>
+      <div class="bar2-fill" style="height:${Math.round(d.n/maxI*80)}px;background:var(--g)"></div>
+      <div class="bar2-lbl">${d.jour?.slice(5)||''}</div>
+    </div>`).join('');
+
+  const barsA30 = aiG.map(d => `
+    <div class="bar2">
+      <div class="bar2-val">${d.n > 0 ? d.n : ''}</div>
+      <div class="bar2-fill" style="height:${Math.round(d.n/maxA*80)}px;background:#0ea5e9"></div>
+      <div class="bar2-lbl">${d.jour?.slice(5)||''}</div>
+    </div>`).join('');
+
+  document.getElementById('pg-analytics').innerHTML = `
+    <div class="g2">
+      <div class="card">
+        <div class="card-title">Inscriptions — 30 derniers jours</div>
+        <div class="bar-wrap2" style="height:100px">${barsI30||'<div class="empty">Aucune donnée</div>'}</div>
+        <div style="display:flex;justify-content:space-between;margin-top:12px;font-size:12px;color:var(--tx2)">
+          <span>Total: <strong style="color:var(--tx)">${fmt(s.total_users)}</strong></span>
+          <span>+${s.inscrits_7j||0} cette semaine</span>
+          <span>+${s.inscrits_auj||0} aujourd'hui</span>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-title">Messages IA — 30 derniers jours</div>
+        <div class="bar-wrap2" style="height:100px">${barsA30||'<div class="empty">Aucune donnée</div>'}</div>
+        <div style="display:flex;justify-content:space-between;margin-top:12px;font-size:12px;color:var(--tx2)">
+          <span>Total: <strong style="color:var(--tx)">${fmt(s.total_ai_msgs)}</strong></span>
+          <span>+${s.ai_msgs_auj||0} aujourd'hui</span>
+          <span>${fmt(s.tokens_total||0)} tokens</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="g3">
+      <div class="card" style="--kpi-color:var(--g)">
+        <div class="card-title">Engagement</div>
+        <div class="stat-row"><span style="color:var(--tx2)">Actifs 7 jours</span><strong class="kpi-up">${fmt(s.actifs_7j)}</strong></div>
+        <div class="stat-row"><span style="color:var(--tx2)">Actifs 30 jours</span><strong>${fmt(s.actifs_30j)}</strong></div>
+        <div class="stat-row"><span style="color:var(--tx2)">Taux 7j</span><strong>${s.total_users>0?Math.round((s.actifs_7j||0)/s.total_users*100):0}%</strong></div>
+        <div class="stat-row"><span style="color:var(--tx2)">Taux 30j</span><strong>${s.total_users>0?Math.round((s.actifs_30j||0)/s.total_users*100):0}%</strong></div>
+      </div>
+      <div class="card">
+        <div class="card-title">IA</div>
+        <div class="stat-row"><span style="color:var(--tx2)">Messages total</span><strong>${fmt(s.total_ai_msgs)}</strong></div>
+        <div class="stat-row"><span style="color:var(--tx2)">Aujourd'hui</span><strong>${s.ai_msgs_auj||0}</strong></div>
+        <div class="stat-row"><span style="color:var(--tx2)">Tokens consommés</span><strong>${fmt(s.tokens_total||0)}</strong></div>
+        <div class="stat-row"><span style="color:var(--tx2)">Moy. / utilisateur</span><strong>${s.total_users>0?Math.round((s.total_ai_msgs||0)/s.total_users):0}</strong></div>
+      </div>
+      <div class="card">
+        <div class="card-title">Plans</div>
+        ${Object.entries(s.plans||{}).map(([plan, n]) => `
+          <div class="stat-row">
+            <span class="ba ${planColor[plan]||'ba-gr'}">${plan}</span>
+            <strong>${n} (${s.total_users>0?Math.round(n/s.total_users*100):0}%)</strong>
+          </div>`).join('')}
+      </div>
+    </div>`;
+}
+
+// =============================================
+//  PAGE: UTILISATEURS
+// =============================================
+async function renderUsers(search = '', planFilter = '') {
+  let url = `/api/admin/users?limit=100`;
+  if (search)     url += `&search=${encodeURIComponent(search)}`;
+  if (planFilter) url += `&plan=${planFilter}`;
+  try {
+    const data = await api(url);
+    USERS = data.users || [];
+    renderUsersTable(USERS);
+  } catch {
+    document.getElementById('pg-users').innerHTML = `<div class="empty"><div class="empty-ico">⚠️</div><div>Erreur de chargement</div></div>`;
+  }
+}
+
+function renderUsersTable(users) {
+  const rows = users.map(u => `
+    <tr>
+      <td>
+        <div style="display:flex;align-items:center;gap:10px">
+          <div style="width:32px;height:32px;border-radius:50%;background:${u.banni?'var(--re2)':'rgba(29,158,117,.1)'};display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;color:${u.banni?'var(--re)':'var(--g)'};flex-shrink:0">${inits(u.nom)}</div>
+          <div>
+            <div style="font-weight:500;font-size:13px">${esc(u.nom)}</div>
+            <div style="font-size:11px;color:var(--tx2)">${esc(u.email)}</div>
+          </div>
+        </div>
+      </td>
+      <td><span class="ba ${planColor[u.plan]||'ba-gr'}">${u.plan||'free'}</span></td>
+      <td style="font-weight:600;color:${(u.credits_ia===null||u.credits_ia>0)?'var(--g)':u.credits_ia===-1?'var(--bl)':'var(--re)'}">
+        ${u.credits_ia===-1?'∞':fmt(u.credits_ia)}
+      </td>
+      <td style="color:var(--tx2)">${fmt(u.messages_ia||0)}</td>
+      <td style="color:var(--tx2);font-size:12px">${u.last_seen?new Date(u.last_seen).toLocaleDateString('fr-FR'):'—'}</td>
+      <td><span class="ba ${u.banni?'ba-r':u.actif?'ba-g':'ba-a'}">${u.banni?'Banni':u.actif?'Actif':'Inactif'}</span></td>
+      <td>
+        <div class="dt-act">
+          <button class="btn btn-sm" onclick="ouvrirEditUser(${u.id})">Modifier</button>
+          <button class="btn btn-sm" style="color:${u.banni?'var(--g)':'var(--re)'}" onclick="${u.banni?'debannir':'bannir'}(${u.id})">${u.banni?'Débannir':'Bannir'}</button>
+          <button class="btn btn-sm btn-danger" onclick="supprimerUser(${u.id})">×</button>
+        </div>
+      </td>
+    </tr>`).join('') || `<tr><td colspan="7"><div class="empty">Aucun utilisateur trouvé</div></td></tr>`;
+
+  document.getElementById('pg-users').innerHTML = `
+    <div class="search-bar">
+      <div class="search-wrap">
+        <span class="search-ico">🔍</span>
+        <input class="search-input" type="text" placeholder="Rechercher par nom ou email..." oninput="renderUsers(this.value, document.getElementById('plan-filter').value)"/>
+      </div>
+      <select class="fi" id="plan-filter" style="width:auto;min-width:140px" onchange="renderUsers(document.querySelector('.search-input').value, this.value)">
+        <option value="">Tous les plans</option>
+        <option value="free">Gratuit</option>
+        <option value="basic">Basic</option>
+        <option value="pro">Pro</option>
+        <option value="illimite">Illimité</option>
+      </select>
+      <button class="btn btn-p btn-sm" onclick="renderUsers()">Actualiser</button>
+    </div>
+    <div style="font-size:13px;color:var(--tx2);margin-bottom:12px">${users.length} utilisateur(s)</div>
+    <div class="card">
+      <div class="tw">
+        <table class="dt">
+          <thead><tr><th>Utilisateur</th><th>Plan</th><th>Crédits IA</th><th>Msgs IA</th><th>Dernière activité</th><th>Statut</th><th>Actions</th></tr></thead>
+          <tbody>${rows}</tbody>
+        </table>
+      </div>
+    </div>`;
+}
+
+function ouvrirEditUser(id) {
+  const u = USERS.find(x => x.id === id);
+  if (!u) return;
+  openModal(`
+    <div class="mo-title">Modifier — ${esc(u.nom)}</div>
+    <div class="mo-sub">${esc(u.email)}</div>
+    <div class="fg">
+      <label class="fl">Plan</label>
+      <div class="plan-sel" id="plan-sel">
+        ${['free','basic','pro','illimite'].map(p => `<div class="plan-opt ${p===u.plan?'sel':''}" onclick="selPlanOpt(this,'${p}')" data-plan="${p}">${p}</div>`).join('')}
+      </div>
+    </div>
+    <div class="fg">
+      <label class="fl">Crédits IA (-1 = illimités)</label>
+      <input class="fi" type="number" id="eu-credits" value="${u.credits_ia}" min="-1"/>
+    </div>
+    <div class="fg">
+      <label class="fl">Nom</label>
+      <input class="fi" id="eu-nom" value="${esc(u.nom)}"/>
+    </div>
+    <div style="padding:12px;background:var(--bg3);border-radius:var(--rl);font-size:13px;margin-bottom:14px">
+      <strong>${fmt(u.messages_ia||0)}</strong> messages IA envoyés au total<br>
+      <span style="color:var(--tx2)">Inscrit le ${new Date(u.created_at).toLocaleDateString('fr-FR')}</span>
+    </div>
+    <div class="mo-footer">
+      <button class="btn" onclick="closeModal()">Annuler</button>
+      <button class="btn btn-p" onclick="saveEditUser(${id})">Enregistrer</button>
+    </div>`);
+}
+
+function selPlanOpt(el, plan) {
+  document.querySelectorAll('#plan-sel .plan-opt').forEach(e => e.classList.remove('sel'));
+  el.classList.add('sel');
+}
+
+async function saveEditUser(id) {
+  const plan    = document.querySelector('#plan-sel .plan-opt.sel')?.dataset.plan;
+  const credits = parseInt(document.getElementById('eu-credits').value);
+  const nom     = document.getElementById('eu-nom').value.trim();
+  try {
+    const data = await api(`/api/admin/users/${id}`, 'PATCH', { plan, credits_ia: credits, nom });
+    if (data.error) return toast(data.error, 'err');
+    const idx = USERS.findIndex(u => u.id === id);
+    if (idx >= 0) USERS[idx] = { ...USERS[idx], ...data };
+    closeModal();
+    renderUsersTable(USERS);
+    toast(`${nom} mis à jour`, 'ok');
+  } catch { toast('Erreur serveur', 'err'); }
+}
+
+async function bannir(id) {
+  if (!confirm('Bannir cet utilisateur ?')) return;
+  await api(`/api/admin/users/${id}`, 'PATCH', { banni: true });
+  await renderUsers();
+  toast('Utilisateur banni', 'info');
+}
+
+async function debannir(id) {
+  await api(`/api/admin/users/${id}`, 'PATCH', { banni: false });
+  await renderUsers();
+  toast('Utilisateur débanni', 'ok');
+}
+
+async function supprimerUser(id) {
+  const u = USERS.find(x => x.id === id);
+  if (!confirm(`Supprimer définitivement ${u?.nom||'cet utilisateur'} ?`)) return;
+  const data = await api(`/api/admin/users/${id}`, 'DELETE');
+  if (data.error) return toast(data.error, 'err');
+  await renderUsers();
+  toast('Utilisateur supprimé', 'info');
+}
+
+// =============================================
+//  PAGE: LOGS IA
+// =============================================
+async function renderAILogs(userId = '') {
+  let url = `/api/admin/ai-logs?limit=100`;
+  if (userId) url += `&user_id=${userId}`;
+  try {
+    const logs = await api(url);
+    AI_LOGS = Array.isArray(logs) ? logs : [];
+    const rows = AI_LOGS.map(l => `
+      <tr>
+        <td style="color:var(--tx2);font-size:11px">${new Date(l.created_at).toLocaleString('fr-FR')}</td>
+        <td>
+          <div style="font-weight:500;font-size:13px">${esc(l.nom||'')}</div>
+          <div style="font-size:11px;color:var(--tx2)">${esc(l.email||'')}</div>
+        </td>
+        <td style="max-width:200px">
+          <div style="font-size:12px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:var(--tx2)">${esc((l.message_user||'').slice(0,80))}</div>
+        </td>
+        <td style="max-width:200px">
+          <div style="font-size:12px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${esc((l.message_ai||'').slice(0,80))}</div>
+        </td>
+        <td style="color:var(--tx2);font-size:12px">${fmt(l.tokens_used||0)}</td>
+        <td><button class="btn btn-sm" onclick="voirLogDetail(${l.id})">Voir</button></td>
+      </tr>`).join('') || `<tr><td colspan="6"><div class="empty">Aucun log trouvé</div></td></tr>`;
+
+    document.getElementById('pg-ai-logs').innerHTML = `
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;flex-wrap:wrap;gap:10px">
+        <span style="font-size:13px;color:var(--tx2)">${AI_LOGS.length} log(s) · ${fmt(AI_LOGS.reduce((a,l)=>a+(l.tokens_used||0),0))} tokens</span>
+        <div style="display:flex;gap:8px">
+          <input class="fi" type="text" placeholder="Filtrer par user_id..." style="width:180px;padding:7px 11px;font-size:12px" oninput="renderAILogs(this.value)"/>
+          <button class="btn btn-sm" onclick="renderAILogs()">Tout afficher</button>
+        </div>
+      </div>
+      <div class="card">
+        <div class="tw">
+          <table class="dt">
+            <thead><tr><th>Date</th><th>Utilisateur</th><th>Question</th><th>Réponse</th><th>Tokens</th><th></th></tr></thead>
+            <tbody>${rows}</tbody>
+          </table>
+        </div>
+      </div>`;
+  } catch {
+    document.getElementById('pg-ai-logs').innerHTML = `<div class="empty"><div class="empty-ico">⚠️</div><div>Erreur de chargement</div></div>`;
+  }
+}
+
+function voirLogDetail(id) {
+  const l = AI_LOGS.find(x => x.id === id);
+  if (!l) return;
+  openModal(`
+    <div class="mo-title">Log IA #${l.id}</div>
+    <div class="mo-sub">${esc(l.nom||'')} · ${esc(l.email||'')} · ${new Date(l.created_at).toLocaleString('fr-FR')}</div>
+    <div class="fg"><label class="fl">Question de l'utilisateur</label>
+      <div style="padding:12px;background:var(--bg3);border-radius:var(--rl);font-size:13px;line-height:1.6">${esc(l.message_user||'—')}</div>
+    </div>
+    <div class="fg"><label class="fl">Réponse de Duka IA</label>
+      <div style="padding:12px;background:rgba(29,158,117,.05);border:1px solid rgba(29,158,117,.15);border-radius:var(--rl);font-size:13px;line-height:1.6;max-height:200px;overflow-y:auto">${esc(l.message_ai||'—')}</div>
+    </div>
+    <div style="font-size:12px;color:var(--tx2)">${fmt(l.tokens_used||0)} tokens utilisés</div>
+    <div class="mo-footer"><button class="btn btn-p" onclick="closeModal()">Fermer</button></div>`);
+}
+
+// =============================================
+//  PAGE: NOTIFICATIONS BROADCAST
+// =============================================
+function renderBroadcast() {
+  document.getElementById('pg-broadcast').innerHTML = `
+    <div class="g2" style="align-items:start">
+      <div class="card">
+        <div class="card-title">Envoyer une notification à tous</div>
+        <div class="fg">
+          <label class="fl">Type</label>
+          <div class="notif-type-sel">
+            <button class="ntbtn sel" onclick="selNotifType('info',this)">ℹ Info</button>
+            <button class="ntbtn" onclick="selNotifType('success',this)">✓ Succès</button>
+            <button class="ntbtn" onclick="selNotifType('warn',this)">⚠ Avertissement</button>
+          </div>
+        </div>
+        <div class="fg"><label class="fl">Titre *</label><input class="fi" id="notif-titre" placeholder="Ex: Maintenance ce soir à 22h"/></div>
+        <div class="fg"><label class="fl">Message *</label><textarea class="fi" id="notif-msg" rows="4" placeholder="Votre message pour tous les utilisateurs..." style="resize:vertical"></textarea></div>
+        <button class="btn btn-p" style="width:100%" onclick="envoyerBroadcast()" id="btn-broadcast">📢 Envoyer à tous les utilisateurs</button>
+        <div style="font-size:12px;color:var(--tx2);margin-top:10px">La notification apparaîtra dans l'application de chaque utilisateur.</div>
+      </div>
+      <div class="card">
+        <div class="card-title">Informations</div>
+        <div class="stat-row"><span style="color:var(--tx2)">Utilisateurs actifs</span><strong>${fmt(STATS.total_users||0)}</strong></div>
+        <div class="stat-row"><span style="color:var(--tx2)">Actifs 30 jours</span><strong>${fmt(STATS.actifs_30j||0)}</strong></div>
+        <div style="padding:14px;background:var(--bg3);border-radius:var(--rl);font-size:13px;margin-top:14px;line-height:1.6">
+          💡 <strong>Cas d'usage :</strong><br>
+          — Annonce d'une nouvelle fonctionnalité<br>
+          — Alerte maintenance<br>
+          — Promotion ou offre spéciale<br>
+          — Message de bienvenue mensuel
+        </div>
+        <div class="divider"></div>
+        <div class="card-title">Réinitialisation crédits</div>
+        <div style="font-size:13px;color:var(--tx2);margin-bottom:12px">Remet les crédits IA à leur valeur initiale selon le plan (à faire chaque mois).</div>
+        <button class="btn" onclick="resetCredits()">🔄 Réinitialiser tous les crédits IA</button>
+      </div>
+    </div>`;
+}
+
+function selNotifType(type, el) {
+  selectedNotifType = type;
+  document.querySelectorAll('.ntbtn').forEach(b => b.classList.remove('sel'));
+  el.classList.add('sel');
+}
+
+async function envoyerBroadcast() {
+  const titre = document.getElementById('notif-titre').value.trim();
+  const msg   = document.getElementById('notif-msg').value.trim();
+  if (!titre || !msg) return toast('Titre et message requis', 'err');
+  const btn = document.getElementById('btn-broadcast');
+  btn.innerHTML = '<div class="spin"></div> Envoi...'; btn.disabled = true;
+  try {
+    const data = await api('/api/admin/notify-all', 'POST', { titre, message: msg, type: selectedNotifType });
+    if (data.error) return toast(data.error, 'err');
+    toast(`Notification envoyée à ${data.sent} utilisateur(s) !`, 'ok');
+    document.getElementById('notif-titre').value = '';
+    document.getElementById('notif-msg').value = '';
+  } catch { toast('Erreur serveur', 'err'); }
+  finally { btn.innerHTML = '📢 Envoyer à tous les utilisateurs'; btn.disabled = false; }
+}
+
+async function resetCredits() {
+  if (!confirm('Réinitialiser les crédits IA de tous les utilisateurs selon leur plan ?')) return;
+  try {
+    const data = await api('/api/admin/reset-credits', 'POST');
+    if (data.error) return toast(data.error, 'err');
+    toast('Crédits IA réinitialisés pour tous !', 'ok');
+  } catch { toast('Erreur serveur', 'err'); }
+}
+
+// =============================================
+//  PAGE: CONFIGURATION
+// =============================================
+async function renderConfig() {
+  let health = {};
+  try { health = await api('/api/health'); } catch {}
+
+  document.getElementById('pg-config').innerHTML = `
+    <div class="g2" style="align-items:start">
+      <div class="card">
+        <div class="card-title">État du serveur</div>
+        <div class="stat-row">
+          <span style="color:var(--tx2)">Statut</span>
+          <span class="ba ${health.status==='ok'?'ba-g':'ba-r'}">${health.status==='ok'?'✓ En ligne':'✕ Hors ligne'}</span>
+        </div>
+        <div class="stat-row">
+          <span style="color:var(--tx2)">Version</span>
+          <strong>${health.version||'—'}</strong>
+        </div>
+        <div class="stat-row">
+          <span style="color:var(--tx2)">IA Claude</span>
+          <span class="ba ${health.ai_configured?'ba-g':'ba-r'}">${health.ai_configured?'✓ Configurée':'✕ Clé manquante'}</span>
+        </div>
+        <div class="stat-row">
+          <span style="color:var(--tx2)">Dernière vérif.</span>
+          <span style="color:var(--tx2);font-size:12px">${new Date().toLocaleTimeString('fr-FR')}</span>
+        </div>
+        ${!health.ai_configured ? `<div style="padding:12px;background:var(--re2);border-radius:var(--rl);font-size:13px;margin-top:14px;color:var(--re)">
+          ⚠️ <strong>Clé API Anthropic manquante.</strong> Ajoutez <code>ANTHROPIC_KEY=sk-ant-...</code> dans le fichier <code>.env</code> du serveur.
+        </div>` : ''}
+      </div>
+      <div class="card">
+        <div class="card-title">Plans & Tarifs</div>
+        ${[{id:'free',label:'Gratuit',prix:'0 FCFA',credits:50},{id:'basic',label:'Basic',prix:'2 000 FCFA/mois',credits:300},{id:'pro',label:'Pro',prix:'5 000 FCFA/mois',credits:1000},{id:'illimite',label:'Illimité',prix:'10 000 FCFA/mois',credits:-1}].map(p=>`
+          <div class="stat-row">
+            <span class="ba ${planColor[p.id]||'ba-gr'}">${p.label}</span>
+            <span style="font-size:12px;color:var(--tx2)">${p.credits===-1?'∞ Illimité':p.credits+' crédits IA'}</span>
+            <strong>${p.prix}</strong>
+          </div>`).join('')}
+        <div style="font-size:12px;color:var(--tx2);margin-top:12px">Pour modifier les plans, éditez la base de données (table <code>plans</code>).</div>
+      </div>
+    </div>
+
+    <div class="card" style="margin-top:16px">
+      <div class="card-title">Guide de déploiement</div>
+      <div style="font-size:13px;line-height:1.8;color:var(--tx2)">
+        <p style="margin-bottom:12px"><strong style="color:var(--tx)">1. Configurer le fichier .env</strong></p>
+        <pre style="background:var(--gn);color:#9FE1CB;padding:14px;border-radius:var(--rl);font-size:12px;overflow-x:auto;margin-bottom:16px">ANTHROPIC_KEY=sk-ant-VOTRE-CLE-ICI
+JWT_SECRET=chaine-aleatoire-tres-longue
+ADMIN_EMAIL=votre@email.com
+ADMIN_PASS=VotreMotDePasse
+PORT=3000</pre>
+        <p style="margin-bottom:12px"><strong style="color:var(--tx)">2. Installer et démarrer</strong></p>
+        <pre style="background:var(--gn);color:#9FE1CB;padding:14px;border-radius:var(--rl);font-size:12px;overflow-x:auto;margin-bottom:16px">cd backend
+npm install
+node server.js</pre>
+        <p style="margin-bottom:12px"><strong style="color:var(--tx)">3. Héberger en production</strong></p>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+          ${[['Railway','railway.app — gratuit jusqu\'à 500h/mois'],['Render','render.com — plan gratuit disponible'],['Heroku','heroku.com — plans payants'],['VPS OVH','À partir de 3€/mois — contrôle total']].map(([n,d])=>`<div style="padding:10px;background:var(--bg3);border-radius:var(--rl)"><strong style="font-size:13px">${n}</strong><div style="font-size:12px;color:var(--tx2);margin-top:3px">${d}</div></div>`).join('')}
+        </div>
+      </div>
+    </div>`;
+}
+
+// =============================================
+//  MODAL & TOAST
+// =============================================
+function openModal(html) {
+  const r = document.getElementById('mroot');
+  r.innerHTML = `<div class="mo" id="mov" onclick="closeModal(event)"><div class="mo-box" onclick="event.stopPropagation()">${html}</div></div>`;
+  requestAnimationFrame(() => document.getElementById('mov').classList.add('open'));
+}
+function closeModal(e) {
+  if (e && e.target !== document.getElementById('mov')) return;
+  const o = document.getElementById('mov');
+  if (o) { o.classList.remove('open'); setTimeout(() => o.remove(), 250); }
+}
+
+let _tt;
+function toast(msg, type = 'ok') {
+  const el = document.getElementById('tst');
+  const ico = { ok:'✓', err:'✕', info:'ℹ' };
+  el.textContent = (ico[type]||'') + ' ' + msg;
+  el.className = `toast show ${type}`;
+  clearTimeout(_tt);
+  _tt = setTimeout(() => el.classList.remove('show'), 3500);
+}
+</script>
+</body>
+</html>
